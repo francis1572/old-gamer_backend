@@ -20,7 +20,9 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/testDB":
 		respond.GetTest(Database, w, r)
 		return
-
+	case "/GetBoardById":
+		respond.GetBoardById(Database, w, r)
+		return
 	default:
 		break
 	}

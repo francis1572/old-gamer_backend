@@ -63,6 +63,38 @@ func SaveUser(db *mongo.Database, user models.User) (*mongo.InsertOneResult, err
 	return res, nil
 }
 
+func GetBoardById(db *mongo.Database, query models.Board) (*models.Board, error) {
+	BoardCollection := db.Collection("Board")
+	var board models.Board
+	result := BoardCollection.FindOne(context.Background(), query.ToQueryBson())
+	err := result.Decode(&board)
+	if err != nil {
+		log.Println("Decode task Error", err)
+		return nil, err
+	}
+	return &board, nil
+}
+
+func GetChildBoardByBoardId(db *mongo.Database, task models.ChildBoard) ([]*models.ChildBoard, error) {
+	ChildBoardCollection := db.Collection("ChildBoard")
+	var childBoards []*models.ChildBoard
+	cur, err := ChildBoardCollection.Find(context.Background(), task.ToQueryBson())
+	if err != nil {
+		log.Println("Find answers Error", err)
+		return nil, err
+	}
+	for cur.Next(context.Background()) {
+		result := models.ChildBoard{}
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Println("Decode answer Error", err)
+			return nil, err
+		}
+		childBoards = append(childBoards, &result)
+	}
+	return childBoards, nil
+}
+
 func GetTest(db *mongo.Database, query models.Test) ([]models.Test, error) {
 	collection := db.Collection("test")
 

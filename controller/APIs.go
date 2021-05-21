@@ -46,6 +46,46 @@ func Login(database *mongo.Database, w http.ResponseWriter, r *http.Request) err
 	w.Write(jsondata)
 	return nil
 }
+func GetBoardById(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody map[string]string
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	log.Println("GetBoardById queryInfo:", requestBody)
+
+	board, err := service.GetBoardById(database, models.Board{BoardId: requestBody["boardId"]})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	childBoards, err := service.GetChildBoardByBoardId(database, models.ChildBoard{BoardId: requestBody["boardId"]})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	var response models.Board
+	// var response viewModels.SentiTasksViewModel
+	response.BoardId = board.BoardId
+	response.BoardName = board.BoardName
+	response.PostNum = board.PostNum
+
+	for _, childBoard := range childBoards {
+		var temp = models.ChildBoard{
+			BoardId:        childBoard.BoardId,
+			ChildBoardId:   childBoard.ChildBoardId,
+			ChildBoardName: childBoard.ChildBoardName,
+			PostNum:        childBoard.PostNum,
+		}
+		response.ChildBoards = append(response.ChildBoards, temp)
+	}
+
+	jsondata, _ := json.Marshal(response)
+	_, _ = w.Write(jsondata)
+	return nil
+}
 
 // example
 func SayhelloName(w http.ResponseWriter, r *http.Request) error {

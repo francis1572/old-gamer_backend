@@ -5,6 +5,7 @@ import "go.mongodb.org/mongo-driver/bson"
 type Board struct {
 	BoardId     string       `bson:"boardId" json:"boardId"`
 	BoardName   string       `bson:"boardName" json:"boardName"`
+	PostNum     int64        `bson:"postNum" json:"postNum"`
 	ChildBoards []ChildBoard `bson:"childBoards" json:"childBoards"`
 }
 
@@ -20,6 +21,7 @@ func (a *Board) ToQueryBson() bson.M {
 }
 
 type ChildBoard struct {
+	BoardId        string `bson:"boardId" json:"boardId"`
 	ChildBoardId   string `bson:"childBoardId" json:"childBoardId"`
 	ChildBoardName string `bson:"childBoardName" json:"childBoardName"`
 	PostNum        int64  `bson:"postNum" json:"postNum"`
@@ -30,10 +32,18 @@ func (a *ChildBoard) TableName() string {
 }
 
 func (a *ChildBoard) ToQueryBson() bson.M {
-	queryObject := bson.M{
-		"childBoardId": a.ChildBoardId,
+	if a.ChildBoardId != "" {
+		queryObject := bson.M{
+			"childBoardId": a.ChildBoardId,
+		}
+		return queryObject
+	} else {
+		queryObject := bson.M{
+			"boardId": a.BoardId,
+		}
+		return queryObject
 	}
-	return queryObject
+
 }
 
 type Vote struct {

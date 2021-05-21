@@ -1,7 +1,6 @@
 package respond
 
 import (
-	// "context"
 	"encoding/json"
 	"final_backend/models"
 	"final_backend/service"
@@ -10,14 +9,43 @@ import (
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/mongo"
-	// "strconv"
-	// "final_backend/models"
-	// "final_backend/service"
-	// "final_backend/viewModels"
-	// uuid "github.com/nu7hatch/gouuid"
-	// "go.mongodb.org/mongo-driver/bson"
-	// "go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+func Login(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var user models.User
+	var response = models.Success{}
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	userResult, err := service.GetUser(database, user.ToQueryBson())
+	// if no user found then insert a new one and return
+	if userResult == nil {
+		_, err := service.SaveUser(database, user)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return err
+		}
+		// check if insert user
+		_, err = service.GetUser(database, user.ToQueryBson())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return err
+		}
+		response.Success = true
+		response.Message = "Add New User"
+		jsondata, _ := json.Marshal(response)
+		w.Write(jsondata)
+		return nil
+	}
+	// if already has users
+	response.Success = true
+	response.Message = "User Login"
+	jsondata, _ := json.Marshal(response)
+	w.Write(jsondata)
+	return nil
+}
 
 // example
 func SayhelloName(w http.ResponseWriter, r *http.Request) error {

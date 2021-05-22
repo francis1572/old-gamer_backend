@@ -6,6 +6,7 @@ type Board struct {
 	BoardId     string       `bson:"boardId" json:"boardId"`
 	BoardName   string       `bson:"boardName" json:"boardName"`
 	PostNum     int64        `bson:"postNum" json:"postNum"`
+	Img         string       `bson:"img" json:"img"`
 	ChildBoards []ChildBoard `bson:"childBoards" json:"childBoards"`
 }
 
@@ -47,10 +48,14 @@ func (a *ChildBoard) ToQueryBson() bson.M {
 }
 
 type Vote struct {
-	VoteId    string `bson:"voteId" json:"voteId"`
-	BoardName string `bson:"boardName" json:"boardName"`
-	Agree     int64  `bson:"agree" json:"agree"`
-	Disagree  int64  `bson:"disagree" json:"disagree"`
+	VoteId         string `bson:"voteId" json:"voteId"`
+	BoardName      string `bson:"boardName" json:"boardName"`
+	Img            string `bson:"img" json:"img"`
+	Agree          int64  `bson:"agree" json:"agree"`
+	Disagree       int64  `bson:"disagree" json:"disagree"`
+	AgreedUsers    []User `bson:"agreedUsers" json:"agreedUsers"`
+	DisagreedUsers []User `bson:"disagreedUsers" json:"disagreedUsers"`
+	Reason         string `bson:"reason" json:"reason"`
 }
 
 func (a *Vote) TableName() string {

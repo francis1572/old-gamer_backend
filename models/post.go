@@ -13,7 +13,7 @@ type Post struct {
 	PostTag      string     `bson:"postTag" json:"postTag"`
 	PostTitle    string     `bson:"postTitle" json:"postTitle"`
 	Author       User       `bson:"author" json:"author"`
-	Content      string     `bson:"content" json:"content"`
+	Content      []Block    `bson:"content" json:"content"`
 	Floor        int64      `bson:"floor" json:"floor"`
 	CommentNum   int64      `bson:"commentNum" json:"commentNum"`
 	LikeNum      int64      `bson:"likeNum" json:"likeNum"`
@@ -33,10 +33,33 @@ func (a *Post) ToQueryBson() bson.M {
 	return queryObject
 }
 
+type Block struct {
+	PostId   string `bson:"postId" json:"postId"`
+	Floor    int64  `bson:"floor" json:"floor"`
+	BlockId  int64  `bson:"blockId" json:"blockId"`
+	Subtitle string `bson:"subtitle" json:"subtitle"`
+	Content  string `bson:"content" json:"content"`
+}
+
+func (a *Block) TableName() string {
+	return "Block"
+}
+
+func (a *Block) ToQueryBson() bson.M {
+	queryObject := bson.M{
+		"postId":  a.PostId,
+		"floor":   a.Floor,
+		"blockId": a.BlockId,
+	}
+	return queryObject
+}
+
 type Citation struct {
 	CitationId string `bson:"citationId" json:"citationId"`
+	PostId     string `bson:"postId" json:"postId"`
 	Floor      int64  `bson:"floor" json:"floor"`
-	BlockIds   []User `bson:"blockIds" json:"blockIds"`
+	CitedFloor int64  `bson:"citedFloor" json:"citedFloor"`
+	BlockId    int64  `bson:"blockId" json:"blockId"`
 }
 
 func (c *Citation) TableName() string {

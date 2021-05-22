@@ -49,6 +49,7 @@ func (a *ChildBoard) ToQueryBson() bson.M {
 
 type Vote struct {
 	VoteId         string `bson:"voteId" json:"voteId"`
+	Launcher       User   `bson:"launcher" json:"launcher"`
 	BoardName      string `bson:"boardName" json:"boardName"`
 	Img            string `bson:"img" json:"img"`
 	Agree          int64  `bson:"agree" json:"agree"`

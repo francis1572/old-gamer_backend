@@ -290,3 +290,45 @@ func GetVote(database *mongo.Database, w http.ResponseWriter, r *http.Request) e
 	_, _ = w.Write(jsondata)
 	return nil
 }
+
+func Vote(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody map[string]interface{}
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		log.Println("Vote API Error")
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	log.Println("Vote queryInfo:", requestBody)
+
+	res, err := service.UpdateVote(database, requestBody)
+	if err != nil {
+		log.Println("UpdateVote Error", res)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	// Get Vote to check whether the update is done
+	vote, err := service.GetVoteById(database, models.Vote{VoteId: requestBody["voteId"].(string)})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	var response = models.Vote{
+		VoteId:         vote.VoteId,
+		Launcher:       vote.Launcher,
+		BoardName:      vote.BoardName,
+		Img:            vote.Img,
+		Agree:          vote.Agree,
+		Disagree:       vote.Disagree,
+		LauncherInfo:   vote.LauncherInfo,
+		AgreedUsers:    vote.AgreedUsers,
+		DisagreedUsers: vote.DisagreedUsers,
+		Reason:         vote.Reason,
+	}
+
+	jsondata, _ := json.Marshal(response)
+	_, _ = w.Write(jsondata)
+	return nil
+}

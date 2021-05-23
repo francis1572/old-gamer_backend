@@ -28,6 +28,9 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/GetVote":
 		respond.GetVote(Database, w, r)
 		return
+	case "/Vote":
+		respond.Vote(Database, w, r)
+		return
 	default:
 		break
 	}

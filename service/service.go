@@ -214,3 +214,97 @@ func GetVotesByUserId(db *mongo.Database, task models.Vote) ([]*models.Vote, err
 	// log.Println("GetUserInfo votes:", votes)
 	return votes, nil
 }
+
+func GetPostsByPostId(db *mongo.Database, task models.Post) ([]*models.Post, error) {
+	PostCollection := db.Collection("Post")
+	var posts []*models.Post
+	cur, err := PostCollection.Find(context.Background(), task.ToQueryBson())
+	// log.Println("GetUserInfo posts:", task.ToQueryBson())
+	if err != nil {
+		log.Println("Find answers Error", err)
+		return nil, err
+	}
+	log.Println("有通過第一階段")
+	for cur.Next(context.Background()) {
+		result := models.Post{}
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Println("Decode answer Error", err)
+			return nil, err
+		}
+		log.Println("有通過第二階段")
+		user, err := GetUserInfoById(db, models.User{UserId: result.Author})
+		result.AuthorInfo = *user
+		log.Println("有通過第三階段", result.AuthorInfo)
+		blocks, err := GetBlocksByFloor(db, models.Block{PostId: result.PostId, Floor: result.Floor})
+		for _, block := range blocks {
+			var temp = models.Block{
+				PostId:   block.PostId,
+				Floor:    block.Floor,
+				BlockId:  block.BlockId,
+				Subtitle: block.Subtitle,
+				Content:  block.Content,
+			}
+			result.Content = append(result.Content, temp)
+		}
+		log.Println("有通過第四階段", result.Content)
+		citations, err := GetCitesByFloor(db, models.Citation{PostId: result.PostId, Floor: result.Floor})
+		if err == nil {
+			for _, citation := range citations {
+				var temp = models.Citation{
+					PostId:     citation.PostId,
+					Floor:      citation.Floor,
+					CitationId: citation.CitationId,
+					CitedFloor: citation.CitedFloor,
+					BlockId:    citation.BlockId,
+				}
+				result.Citations = append(result.Citations, temp)
+			}
+		}
+		log.Println("有通過第五階段", result.Citations)
+
+		posts = append(posts, &result)
+	}
+	// log.Println("GetUserInfo posts:", posts)
+	return posts, nil
+}
+
+func GetBlocksByFloor(db *mongo.Database, task models.Block) ([]*models.Block, error) {
+	BlockCollection := db.Collection("Block")
+	var blocks []*models.Block
+	cur, err := BlockCollection.Find(context.Background(), task.ToQueryBson())
+	if err != nil {
+		log.Println("Find answers Error", err)
+		return nil, err
+	}
+	for cur.Next(context.Background()) {
+		result := models.Block{}
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Println("Decode answer Error", err)
+			return nil, err
+		}
+		blocks = append(blocks, &result)
+	}
+	return blocks, nil
+}
+
+func GetCitesByFloor(db *mongo.Database, task models.Citation) ([]*models.Citation, error) {
+	CiteCollection := db.Collection("Citation")
+	var cites []*models.Citation
+	cur, err := CiteCollection.Find(context.Background(), task.ToQueryBson())
+	if err != nil {
+		log.Println("Find answers Error", err)
+		return nil, err
+	}
+	for cur.Next(context.Background()) {
+		result := models.Citation{}
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Println("Decode answer Error", err)
+			return nil, err
+		}
+		cites = append(cites, &result)
+	}
+	return cites, nil
+}

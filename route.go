@@ -26,6 +26,9 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/GetUserInfo":
 		respond.GetUserInfo(Database, w, r)
 		return
+	case "/GetPostDetail":
+		respond.GetPostDetail(Database, w, r)
+		return
 	default:
 		break
 	}

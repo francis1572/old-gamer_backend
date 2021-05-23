@@ -55,12 +55,20 @@ func (a *Block) TableName() string {
 }
 
 func (a *Block) ToQueryBson() bson.M {
-	queryObject := bson.M{
-		"postId":  a.PostId,
-		"floor":   a.Floor,
-		"blockId": a.BlockId,
+
+	if a.PostId != "" {
+		queryObject := bson.M{
+			"postId": a.PostId,
+			"floor":  a.Floor,
+		}
+		return queryObject
+	} else {
+		queryObject := bson.M{
+			"blockId": a.BlockId,
+		}
+		return queryObject
 	}
-	return queryObject
+
 }
 
 type Citation struct {
@@ -76,10 +84,19 @@ func (c *Citation) TableName() string {
 }
 
 func (c *Citation) ToQueryBson() bson.M {
-	queryObject := bson.M{
-		"citationId": c.CitationId,
+	if c.PostId != "" {
+		queryObject := bson.M{
+			"postId": c.PostId,
+			"floor":  c.Floor,
+		}
+		return queryObject
+	} else {
+		queryObject := bson.M{
+			"citationId": c.CitationId,
+		}
+		return queryObject
 	}
-	return queryObject
+
 }
 
 type Comment struct {

@@ -243,3 +243,42 @@ func GetUserInfo(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 	_, _ = w.Write(jsondata)
 	return nil
 }
+func GetPostDetail(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody map[string]string
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	log.Println("GetPostDetail queryInfo:", requestBody)
+
+	posts, err := service.GetPostsByPostId(database, models.Post{PostId: requestBody["postId"]})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	var response []models.Post
+	for _, post := range posts {
+		var temp = models.Post{
+			PostId:       post.PostId,
+			BoardId:      post.BoardId,
+			ChildBoardId: post.ChildBoardId,
+			PostTag:      post.PostTag,
+			PostTitle:    post.PostTitle,
+			Author:       post.Author,
+			Floor:        post.Floor,
+			CommentNum:   post.CommentNum,
+			LikeNum:      post.LikeNum,
+			Time:         post.Time,
+			LikedUsers:   post.LikedUsers,
+			Content:      post.Content,
+			Citations:    post.Citations,
+			AuthorInfo:   post.AuthorInfo,
+		}
+		response = append(response, temp)
+	}
+
+	jsondata, _ := json.Marshal(response)
+	_, _ = w.Write(jsondata)
+	return nil
+}

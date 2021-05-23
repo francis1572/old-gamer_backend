@@ -243,3 +243,50 @@ func GetUserInfo(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 	_, _ = w.Write(jsondata)
 	return nil
 }
+
+func GetVote(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	log.Println("GetUserInfo")
+
+	votes, err := service.GetVote(database)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	var response []models.Vote
+	for _, vote := range votes {
+		user, err := service.GetUserInfoById(database, models.User{UserId: vote.Launcher})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return err
+		}
+
+		vote.LauncherInfo.Name = user.Name
+		vote.LauncherInfo.AccessToken = user.AccessToken
+		vote.LauncherInfo.ImageUrl = user.ImageUrl
+		vote.LauncherInfo.Email = user.Email
+		vote.LauncherInfo.FamilyName = user.FamilyName
+		vote.LauncherInfo.GivenName = user.GivenName
+		vote.LauncherInfo.UserId = user.UserId
+		vote.LauncherInfo.SelfIntroduction = user.SelfIntroduction
+		vote.LauncherInfo.InterestGames = user.InterestGames
+
+		var temp = models.Vote{
+			VoteId:         vote.VoteId,
+			Launcher:       vote.Launcher,
+			BoardName:      vote.BoardName,
+			Img:            vote.Img,
+			Agree:          vote.Agree,
+			Disagree:       vote.Disagree,
+			LauncherInfo:   vote.LauncherInfo,
+			AgreedUsers:    vote.AgreedUsers,
+			DisagreedUsers: vote.DisagreedUsers,
+			Reason:         vote.Reason,
+		}
+		response = append(response, temp)
+	}
+
+	jsondata, _ := json.Marshal(response)
+	_, _ = w.Write(jsondata)
+	return nil
+}

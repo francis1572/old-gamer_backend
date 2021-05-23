@@ -214,3 +214,24 @@ func GetVotesByUserId(db *mongo.Database, task models.Vote) ([]*models.Vote, err
 	// log.Println("GetUserInfo votes:", votes)
 	return votes, nil
 }
+
+func GetVote(db *mongo.Database) ([]*models.Vote, error) {
+	VoteCollection := db.Collection("Vote")
+	var votes []*models.Vote
+	cur, err := VoteCollection.Find(context.Background(), bson.M{})
+	if err != nil {
+		log.Println("GetVote Error", err)
+		return nil, err
+	}
+
+	for cur.Next(context.Background()) {
+		result := models.Vote{}
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Println("Decode Vote Error", err)
+			return nil, err
+		}
+		votes = append(votes, &result)
+	}
+	return votes, nil
+}

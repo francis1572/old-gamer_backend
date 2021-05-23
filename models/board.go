@@ -5,6 +5,7 @@ import "go.mongodb.org/mongo-driver/bson"
 type Board struct {
 	BoardId     string       `bson:"boardId" json:"boardId"`
 	BoardName   string       `bson:"boardName" json:"boardName"`
+	DomainName  string       `bson:"domainName" json:"domainName"`
 	PostNum     int64        `bson:"postNum" json:"postNum"`
 	Img         string       `bson:"img" json:"img"`
 	ChildBoards []ChildBoard `bson:"childBoards" json:"childBoards"`
@@ -15,10 +16,17 @@ func (a *Board) TableName() string {
 }
 
 func (a *Board) ToQueryBson() bson.M {
-	queryObject := bson.M{
-		"boardId": a.BoardId,
+	if a.BoardId != "" {
+		queryObject := bson.M{
+			"boardId": a.BoardId,
+		}
+		return queryObject
+	} else {
+		queryObject := bson.M{
+			"domainName": a.DomainName,
+		}
+		return queryObject
 	}
-	return queryObject
 }
 
 type ChildBoard struct {
@@ -48,15 +56,16 @@ func (a *ChildBoard) ToQueryBson() bson.M {
 }
 
 type Vote struct {
-	VoteId         string `bson:"voteId" json:"voteId"`
-	Launcher       User   `bson:"launcher" json:"launcher"`
-	BoardName      string `bson:"boardName" json:"boardName"`
-	Img            string `bson:"img" json:"img"`
-	Agree          int64  `bson:"agree" json:"agree"`
-	Disagree       int64  `bson:"disagree" json:"disagree"`
-	AgreedUsers    []User `bson:"agreedUsers" json:"agreedUsers"`
-	DisagreedUsers []User `bson:"disagreedUsers" json:"disagreedUsers"`
-	Reason         string `bson:"reason" json:"reason"`
+	VoteId         string   `bson:"voteId" json:"voteId"`
+	Launcher       string   `bson:"launcher" json:"launcher"`
+	BoardName      string   `bson:"boardName" json:"boardName"`
+	Img            string   `bson:"img" json:"img"`
+	Agree          int64    `bson:"agree" json:"agree"`
+	Disagree       int64    `bson:"disagree" json:"disagree"`
+	LauncherInfo   User     `bson:"launcherInfo" json:"launcherInfo"`
+	AgreedUsers    []string `bson:"agreedUsers" json:"agreedUsers"`
+	DisagreedUsers []string `bson:"disagreedUsers" json:"disagreedUsers"`
+	Reason         string   `bson:"reason" json:"reason"`
 }
 
 func (a *Vote) TableName() string {
@@ -64,8 +73,16 @@ func (a *Vote) TableName() string {
 }
 
 func (a *Vote) ToQueryBson() bson.M {
-	queryObject := bson.M{
-		"voteId": a.VoteId,
+	if a.VoteId != "" {
+
+		queryObject := bson.M{
+			"voteId": a.VoteId,
+		}
+		return queryObject
+	} else {
+		queryObject := bson.M{
+			"launcher": a.Launcher,
+		}
+		return queryObject
 	}
-	return queryObject
 }

@@ -6,21 +6,18 @@ import (
 
 //User structure
 type User struct {
-	Name                  string   `bson:"name" json:"name"`
-	AccessToken           string   `bson:"accessToken" json:"accessToken"`
-	ImageUrl              string   `bson:"imageUrl" json:"imageUrl"`
-	Email                 string   `bson:"email" json:"email"`
-	FamilyName            string   `bson:"familyName" json:"familyName"`
-	GivenName             string   `bson:"givenName" json:"givenName"`
-	UserId                string   `bson:"userId" json:"userId"`
-	SelfIntroduction      string   `bson:"self_introduction" json:"self_introduction"`
-	InterestGames         []string `bson:"interest_games" json:"interest_games"`
-	CumulateGameSpecialty []string `bson:"cumulate_game_specialty" json:"cumulate_game_specialty"`
-	PublishPost           []Post   `bson:"publish_post" json:"publish_post"`
-	RepliedPost           []Post   `bson:"replied_post" json:"replied_post"`
-	LaunchNewBoard        []Board  `bson:"launch_new_board" json:"launch_new_board"`
-	AlreadyVoted          []Vote   `bson:"already_voted" json:"already_voted"`
-	AlreadyLiked          []string `bson:"already_liked" json:"already_liked"`
+	Name                  string      `bson:"name" json:"name"`
+	AccessToken           string      `bson:"accessToken" json:"accessToken"`
+	ImageUrl              string      `bson:"imageUrl" json:"imageUrl"`
+	Email                 string      `bson:"email" json:"email"`
+	FamilyName            string      `bson:"familyName" json:"familyName"`
+	GivenName             string      `bson:"givenName" json:"givenName"`
+	UserId                string      `bson:"userId" json:"userId"`
+	SelfIntroduction      string      `bson:"selfIntroduction" json:"selfIntroduction"`
+	InterestGames         string      `bson:"interestGames" json:"interestGames"`
+	CumulateGameSpecialty []Specialty `bson:"cumulateGameSpecialty" json:"cumulateGameSpecialty"`
+	PublishPost           []Post      `bson:"publishPost" json:"publishPost"`
+	LaunchNewBoard        []Vote      `bson:"launchNewBoard" json:"launchNewBoard"`
 }
 
 func (u *User) ToQueryBson() bson.M {
@@ -32,6 +29,27 @@ func (u *User) ToQueryBson() bson.M {
 	} else {
 		queryObject = bson.M{
 			"email": u.Email,
+		}
+	}
+	return queryObject
+}
+
+type Specialty struct {
+	BoardId   string `bson:"boardId" json:"boardId"`
+	BoardName string `bson:"boardName" json:"boardName"`
+	UserId    string `bson:"userId" json:"userId"`
+	Score     int64  `bson:"score" json:"score"`
+}
+
+func (s *Specialty) ToQueryBson() bson.M {
+	var queryObject bson.M
+	if s.UserId != "" {
+		queryObject = bson.M{
+			"userId": s.UserId,
+		}
+	} else {
+		queryObject = bson.M{
+			"userId": s.UserId,
 		}
 	}
 	return queryObject

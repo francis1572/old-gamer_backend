@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func Login(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+func googleSignIn(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	var user models.User
 	var response = models.Success{}
 	err := json.NewDecoder(r.Body).Decode(&user)
@@ -70,6 +70,8 @@ func GetBoardById(database *mongo.Database, w http.ResponseWriter, r *http.Reque
 	// var response viewModels.SentiTasksViewModel
 	response.BoardId = board.BoardId
 	response.BoardName = board.BoardName
+	response.DomainName = board.DomainName
+	response.Img = board.Img
 	response.PostNum = board.PostNum
 
 	for _, childBoard := range childBoards {
@@ -80,6 +82,161 @@ func GetBoardById(database *mongo.Database, w http.ResponseWriter, r *http.Reque
 			PostNum:        childBoard.PostNum,
 		}
 		response.ChildBoards = append(response.ChildBoards, temp)
+	}
+
+	jsondata, _ := json.Marshal(response)
+	_, _ = w.Write(jsondata)
+	return nil
+}
+
+func GetAllBoards(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody map[string]string
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	log.Println("GetBoardById queryInfo:", requestBody)
+
+	boards, err := service.GetBoardsByDomain(database, models.Board{DomainName: requestBody["domainName"]})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	var response []models.Board
+	for _, board := range boards {
+		var temp = models.Board{
+			BoardId:    board.BoardId,
+			BoardName:  board.BoardName,
+			DomainName: board.DomainName,
+			PostNum:    board.PostNum,
+			Img:        board.Img,
+		}
+		response = append(response, temp)
+	}
+
+	jsondata, _ := json.Marshal(response)
+	_, _ = w.Write(jsondata)
+	return nil
+}
+
+func GetAllPosts(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody map[string]string
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	log.Println("GetBoardById queryInfo:", requestBody)
+
+	posts, err := service.GetPostsByBoardId(database, models.Board{BoardId: requestBody["boardId"]})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	var response []models.Post
+	for _, post := range posts {
+		var temp = models.Post{
+			PostId:       post.PostId,
+			BoardId:      post.BoardId,
+			ChildBoardId: post.ChildBoardId,
+			PostTag:      post.PostTag,
+			PostTitle:    post.PostTitle,
+			Author:       post.Author,
+			Floor:        post.Floor,
+			CommentNum:   post.CommentNum,
+			LikeNum:      post.LikeNum,
+			Time:         post.Time,
+			LikedUsers:   post.LikedUsers,
+		}
+		response = append(response, temp)
+	}
+
+	jsondata, _ := json.Marshal(response)
+	_, _ = w.Write(jsondata)
+	return nil
+}
+
+func GetUserInfo(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody map[string]string
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	log.Println("GetUserInfo queryInfo:", requestBody)
+
+	user, err := service.GetUserInfoById(database, models.User{UserId: requestBody["userId"]})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	specialties, err := service.GetSpecialtyByUserId(database, models.Specialty{UserId: requestBody["userId"]})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	posts, err := service.GetPostsByUserId(database, models.Post{Author: requestBody["userId"]})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	votes, err := service.GetVotesByUserId(database, models.Vote{Launcher: requestBody["userId"]})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	var response models.User
+
+	response.Name = user.Name
+	response.AccessToken = user.AccessToken
+	response.ImageUrl = user.ImageUrl
+	response.Email = user.Email
+	response.FamilyName = user.FamilyName
+	response.GivenName = user.GivenName
+	response.UserId = user.UserId
+	response.SelfIntroduction = user.SelfIntroduction
+	response.InterestGames = user.InterestGames
+
+	for _, specialty := range specialties {
+		var temp = models.Specialty{
+			BoardId:   specialty.BoardId,
+			BoardName: specialty.BoardName,
+			UserId:    specialty.UserId,
+			Score:     specialty.Score,
+		}
+		response.CumulateGameSpecialty = append(response.CumulateGameSpecialty, temp)
+	}
+	for _, post := range posts {
+		var temp = models.Post{
+			PostId:       post.PostId,
+			BoardId:      post.BoardId,
+			ChildBoardId: post.ChildBoardId,
+			PostTag:      post.PostTag,
+			PostTitle:    post.PostTitle,
+			Author:       post.Author,
+			Floor:        post.Floor,
+			CommentNum:   post.CommentNum,
+			LikeNum:      post.LikeNum,
+			Time:         post.Time,
+			LikedUsers:   post.LikedUsers,
+		}
+		response.PublishPost = append(response.PublishPost, temp)
+	}
+	for _, vote := range votes {
+		var temp = models.Vote{
+			VoteId:    vote.VoteId,
+			Launcher:  vote.Launcher,
+			BoardName: vote.BoardName,
+			Img:       vote.Img,
+			Agree:     vote.Agree,
+			Disagree:  vote.Disagree,
+			Reason:    vote.Reason,
+		}
+		response.LaunchNewBoard = append(response.LaunchNewBoard, temp)
 	}
 
 	jsondata, _ := json.Marshal(response)

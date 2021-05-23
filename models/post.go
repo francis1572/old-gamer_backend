@@ -12,14 +12,15 @@ type Post struct {
 	ChildBoardId string     `bson:"childBoardId" json:"childBoardId"`
 	PostTag      string     `bson:"postTag" json:"postTag"`
 	PostTitle    string     `bson:"postTitle" json:"postTitle"`
-	Author       User       `bson:"author" json:"author"`
+	Author       string     `bson:"author" json:"author"`
 	Content      []Block    `bson:"content" json:"content"`
 	Floor        int64      `bson:"floor" json:"floor"`
 	CommentNum   int64      `bson:"commentNum" json:"commentNum"`
 	LikeNum      int64      `bson:"likeNum" json:"likeNum"`
 	Time         time.Time  `bson:"time" json:"time"`
 	Citations    []Citation `bson:"citation" json:"citation"`
-	LikedUsers   []User     `bson:"likedUsers" json:"likedUsers"`
+	LikedUsers   []string   `bson:"likedUsers" json:"likedUsers"`
+	AuthorInfo   User       `bson:"authorInfo" json:"authorInfo"`
 }
 
 func (a *Post) TableName() string {
@@ -27,10 +28,18 @@ func (a *Post) TableName() string {
 }
 
 func (a *Post) ToQueryBson() bson.M {
-	queryObject := bson.M{
-		"postId": a.PostId,
+	if a.PostId != "" {
+		queryObject := bson.M{
+			"postId": a.PostId,
+		}
+		return queryObject
+	} else {
+		queryObject := bson.M{
+			"author": a.Author,
+		}
+		return queryObject
 	}
-	return queryObject
+
 }
 
 type Block struct {

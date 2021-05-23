@@ -215,7 +215,6 @@ func GetVotesByUserId(db *mongo.Database, task models.Vote) ([]*models.Vote, err
 	return votes, nil
 }
 
-<<<<<<< HEAD
 func GetPostsByPostId(db *mongo.Database, task models.Post) ([]*models.Post, error) {
 	PostCollection := db.Collection("Post")
 	var posts []*models.Post

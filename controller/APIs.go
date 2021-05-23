@@ -243,7 +243,7 @@ func GetUserInfo(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 	_, _ = w.Write(jsondata)
 	return nil
 }
-<<<<<<< HEAD
+
 func GetPostDetail(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	var requestBody map[string]string
 	err := json.NewDecoder(r.Body).Decode(&requestBody)

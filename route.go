@@ -1,7 +1,6 @@
 package main
 
 import (
-	// "log"
 	"net/http"
 
 	respond "final_backend/controller"
@@ -29,9 +28,14 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/GetPostDetail":
 		respond.GetPostDetail(Database, w, r)
 		return
+	case "/GetVote":
+		respond.GetVote(Database, w, r)
+		return
+	case "/Vote":
+		respond.Vote(Database, w, r)
+		return
 	default:
 		break
 	}
 	http.NotFound(w, r)
-	return
 }

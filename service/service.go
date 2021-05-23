@@ -215,6 +215,7 @@ func GetVotesByUserId(db *mongo.Database, task models.Vote) ([]*models.Vote, err
 	return votes, nil
 }
 
+<<<<<<< HEAD
 func GetPostsByPostId(db *mongo.Database, task models.Post) ([]*models.Post, error) {
 	PostCollection := db.Collection("Post")
 	var posts []*models.Post
@@ -307,4 +308,85 @@ func GetCitesByFloor(db *mongo.Database, task models.Citation) ([]*models.Citati
 		cites = append(cites, &result)
 	}
 	return cites, nil
+}
+
+func GetVoteById(db *mongo.Database, query models.Vote) (*models.Vote, error) {
+	VoteCollection := db.Collection("Vote")
+	var vote models.Vote
+	result := VoteCollection.FindOne(context.Background(), query.ToQueryBson())
+	err := result.Decode(&vote)
+	if err != nil {
+		log.Println("Decode vote Error", err)
+		return nil, err
+	}
+	return &vote, nil
+}
+
+func UpdateVote(db *mongo.Database, queryBson bson.M) (*mongo.UpdateResult, error) {
+	VoteCollection := db.Collection("Vote")
+	var vote models.Vote
+	result := VoteCollection.FindOne(context.Background(), bson.M{"voteId": queryBson["voteId"]})
+	err := result.Decode(&vote)
+	if err != nil {
+		log.Println("Decode vote Error", err)
+		return nil, err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if contains(vote.DisagreedUsers, queryBson["userId"].(string)) || contains(vote.AgreedUsers, queryBson["userId"].(string)) {
+		log.Println("User voted")
+		return nil, nil
+	}
+
+	var update bson.M
+	// type of queryBson["decision"] is float
+	if queryBson["decision"] == 0. {
+		vote.DisagreedUsers = append(vote.DisagreedUsers, queryBson["userId"].(string))
+		update = bson.M{"$set": bson.M{"disagree": vote.Disagree + 1, "disagreedUsers": vote.DisagreedUsers}}
+	} else if queryBson["decision"] == 1. {
+		vote.AgreedUsers = append(vote.AgreedUsers, queryBson["userId"].(string))
+		update = bson.M{"$set": bson.M{"agree": vote.Agree + 1, "agreedUsers": vote.AgreedUsers}}
+	} else {
+		log.Println("Wrong value of decision")
+		return nil, nil
+	}
+	filter := bson.M{"voteId": queryBson["voteId"]}
+	res, err := VoteCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Println("Update Vote Error", err)
+		return nil, err
+	}
+	return res, nil
+}
+
+func GetVote(db *mongo.Database) ([]*models.Vote, error) {
+	VoteCollection := db.Collection("Vote")
+	var votes []*models.Vote
+	cur, err := VoteCollection.Find(context.Background(), bson.M{})
+	if err != nil {
+		log.Println("GetVote Error", err)
+		return nil, err
+	}
+
+	for cur.Next(context.Background()) {
+		result := models.Vote{}
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Println("Decode Vote Error", err)
+			return nil, err
+		}
+		votes = append(votes, &result)
+	}
+	return votes, nil
+}
+
+func contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
 }

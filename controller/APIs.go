@@ -372,3 +372,44 @@ func Vote(database *mongo.Database, w http.ResponseWriter, r *http.Request) erro
 	_, _ = w.Write(jsondata)
 	return nil
 }
+
+func LaunchVote(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody map[string]string
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	log.Println("LaunchVote queryInfo:", requestBody)
+
+	voteId, err := service.LaunchVote(database, requestBody)
+	if err != nil {
+		log.Println("LaunchVote Error")
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	// Get Vote to check whether LaunchVote is done
+	vote, err := service.GetVoteById(database, models.Vote{VoteId: voteId})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	var response = models.Vote{
+		VoteId:         vote.VoteId,
+		Launcher:       vote.Launcher,
+		BoardName:      vote.BoardName,
+		Img:            vote.Img,
+		Agree:          vote.Agree,
+		Disagree:       vote.Disagree,
+		LauncherInfo:   vote.LauncherInfo,
+		AgreedUsers:    vote.AgreedUsers,
+		DisagreedUsers: vote.DisagreedUsers,
+		Reason:         vote.Reason,
+	}
+
+	jsondata, _ := json.Marshal(response)
+	_, _ = w.Write(jsondata)
+	return nil
+}

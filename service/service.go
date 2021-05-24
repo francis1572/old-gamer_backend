@@ -234,10 +234,10 @@ func GetPostsByPostId(db *mongo.Database, task models.Post) ([]*models.Post, err
 			return nil, err
 		}
 		log.Println("有通過第二階段")
-		user, err := GetUserInfoById(db, models.User{UserId: result.Author})
+		user, _ := GetUserInfoById(db, models.User{UserId: result.Author})
 		result.AuthorInfo = *user
 		log.Println("有通過第三階段", result.AuthorInfo)
-		blocks, err := GetBlocksByFloor(db, models.Block{PostId: result.PostId, Floor: result.Floor})
+		blocks, _ := GetBlocksByFloor(db, models.Block{PostId: result.PostId, Floor: result.Floor})
 		for _, block := range blocks {
 			var temp = models.Block{
 				PostId:   block.PostId,

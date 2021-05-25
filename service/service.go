@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"log"
+	"strconv"
 	"time"
 
 	"final_backend/models"
@@ -233,10 +234,10 @@ func GetPostsByPostId(db *mongo.Database, task models.Post) ([]*models.Post, err
 			return nil, err
 		}
 		log.Println("有通過第二階段")
-		user, err := GetUserInfoById(db, models.User{UserId: result.Author})
+		user, _ := GetUserInfoById(db, models.User{UserId: result.Author})
 		result.AuthorInfo = *user
 		log.Println("有通過第三階段", result.AuthorInfo)
-		blocks, err := GetBlocksByFloor(db, models.Block{PostId: result.PostId, Floor: result.Floor})
+		blocks, _ := GetBlocksByFloor(db, models.Block{PostId: result.PostId, Floor: result.Floor})
 		for _, block := range blocks {
 			var temp = models.Block{
 				PostId:   block.PostId,
@@ -379,6 +380,62 @@ func GetVote(db *mongo.Database) ([]*models.Vote, error) {
 		votes = append(votes, &result)
 	}
 	return votes, nil
+}
+
+// TODO: Check whether the Vote exists
+func LaunchVote(db *mongo.Database, query map[string]string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Get voteId and update system info
+	SystemCollection := db.Collection("System")
+	var system models.System
+	result := SystemCollection.FindOne(context.Background(), bson.M{})
+	sysErr := result.Decode(&system)
+	if sysErr != nil {
+		log.Println("Get System Error", sysErr)
+		return "", sysErr
+	}
+	voteId := system.TotalVotes
+	update := bson.M{"$set": bson.M{"totalVotes": voteId + 1}}
+	filter := bson.M{"totalVotes": voteId}
+	_, sysErr2 := SystemCollection.UpdateOne(ctx, filter, update)
+	if sysErr2 != nil {
+		log.Println("Update System Error", sysErr2)
+		return "", sysErr2
+	}
+
+	// Save Vote into database
+	VoteCollection := db.Collection("Vote")
+	var vote = models.Vote{
+		VoteId:    "vote" + strconv.Itoa(voteId),
+		Launcher:  query["user_id"],
+		BoardName: query["board_name"],
+		Img:       query["img_url"],
+		Reason:    query["reason"],
+	}
+	_, voteErr := VoteCollection.InsertOne(ctx, vote)
+	if voteErr != nil {
+		log.Println("Insert Vote Error", voteErr)
+		return "", voteErr
+	}
+
+	// Add voteId to User
+	user, userErr := GetUserInfoById(db, models.User{UserId: query["user_id"]})
+	if userErr != nil {
+		log.Println("Get User Error", userErr)
+		return "", userErr
+	}
+	UserCollection := db.Collection("User")
+	filter = bson.M{"$set": bson.M{"userId": query["user_id"]}}
+	update = bson.M{"launchNewBoard": append(user.LaunchNewBoard, vote)}
+	_, userErr2 := UserCollection.UpdateOne(ctx, filter, update)
+	if sysErr2 != nil {
+		log.Println("Update User Error", userErr2)
+		return "", userErr2
+	}
+
+	return vote.VoteId, nil
 }
 
 func contains(s []string, str string) bool {

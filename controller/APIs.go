@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func googleSignIn(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+func GoogleSignIn(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	var user models.User
 	var response = models.Success{}
 	err := json.NewDecoder(r.Body).Decode(&user)

@@ -319,6 +319,10 @@ func GetVoteById(db *mongo.Database, query models.Vote) (*models.Vote, error) {
 		log.Println("Decode vote Error", err)
 		return nil, err
 	}
+
+	user, _ := GetUserInfoById(db, models.User{UserId: vote.Launcher})
+	vote.LauncherInfo = *user
+
 	return &vote, nil
 }
 
@@ -409,9 +413,9 @@ func LaunchVote(db *mongo.Database, query map[string]string) (string, error) {
 	VoteCollection := db.Collection("Vote")
 	var vote = models.Vote{
 		VoteId:    "vote" + strconv.Itoa(voteId),
-		Launcher:  query["user_id"],
-		BoardName: query["board_name"],
-		Img:       query["img_url"],
+		Launcher:  query["userId"],
+		BoardName: query["boardName"],
+		Img:       query["imgUrl"],
 		Reason:    query["reason"],
 	}
 	_, voteErr := VoteCollection.InsertOne(ctx, vote)
@@ -421,13 +425,13 @@ func LaunchVote(db *mongo.Database, query map[string]string) (string, error) {
 	}
 
 	// Add voteId to User
-	user, userErr := GetUserInfoById(db, models.User{UserId: query["user_id"]})
+	user, userErr := GetUserInfoById(db, models.User{UserId: query["userId"]})
 	if userErr != nil {
 		log.Println("Get User Error", userErr)
 		return "", userErr
 	}
 	UserCollection := db.Collection("User")
-	filter = bson.M{"$set": bson.M{"userId": query["user_id"]}}
+	filter = bson.M{"$set": bson.M{"userId": query["userId"]}}
 	update = bson.M{"launchNewBoard": append(user.LaunchNewBoard, vote)}
 	_, userErr2 := UserCollection.UpdateOne(ctx, filter, update)
 	if sysErr2 != nil {

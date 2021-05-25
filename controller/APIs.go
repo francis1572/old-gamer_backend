@@ -331,6 +331,26 @@ func GetVote(database *mongo.Database, w http.ResponseWriter, r *http.Request) e
 	return nil
 }
 
+func GetVoteDetail(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody map[string]string
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	log.Println("GetVoteDetail queryInfo:", requestBody)
+
+	vote, err := service.GetVoteById(database, models.Vote{VoteId: requestBody["voteId"]})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	jsondata, _ := json.Marshal(vote)
+	_, _ = w.Write(jsondata)
+	return nil
+}
+
 func Vote(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	var requestBody map[string]interface{}
 	err := json.NewDecoder(r.Body).Decode(&requestBody)

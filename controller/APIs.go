@@ -285,6 +285,25 @@ func GetPostDetail(database *mongo.Database, w http.ResponseWriter, r *http.Requ
 	return nil
 }
 
+func Post(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.Post
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	_, err = service.InsertPost(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	return nil
+}
+
 func GetVote(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	log.Println("GetUserInfo")
 

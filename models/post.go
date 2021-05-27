@@ -130,3 +130,36 @@ func (a *Comment) ToQueryBson() bson.M {
 		return queryObject
 	}
 }
+
+type PostDB struct {
+	PostId       string    `bson:"postId" json:"postId"`
+	BoardId      string    `bson:"boardId" json:"boardId"`
+	ChildBoardId string    `bson:"childBoardId" json:"childBoardId"`
+	PostTag      string    `bson:"postTag" json:"postTag"`
+	PostTitle    string    `bson:"postTitle" json:"postTitle"`
+	Author       string    `bson:"author" json:"author"`
+	Floor        int64     `bson:"floor" json:"floor"`
+	CommentNum   int64     `bson:"commentNum" json:"commentNum"`
+	LikeNum      int64     `bson:"likeNum" json:"likeNum"`
+	Time         time.Time `bson:"time" json:"time"`
+	LikedUsers   []string  `bson:"likedUsers" json:"likedUsers"`
+}
+
+func (a *PostDB) TableName() string {
+	return "PostDB"
+}
+
+func (a *PostDB) ToQueryBson() bson.M {
+	if a.PostId != "" {
+		queryObject := bson.M{
+			"postId": a.PostId,
+		}
+		return queryObject
+	} else {
+		queryObject := bson.M{
+			"author": a.Author,
+		}
+		return queryObject
+	}
+
+}

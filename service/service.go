@@ -308,6 +308,7 @@ func GetBlocksByFloor(db *mongo.Database, task models.Block) ([]*models.Block, e
 	}
 	return blocks, nil
 }
+
 func GetCommentsByFloor(db *mongo.Database, task models.Comment) ([]*models.Comment, error) {
 	CommentCollection := db.Collection("Comment")
 	var comments []*models.Comment
@@ -346,6 +347,45 @@ func GetCitesByFloor(db *mongo.Database, task models.Citation) ([]*models.Citati
 		cites = append(cites, &result)
 	}
 	return cites, nil
+}
+
+func InsertPost(db *mongo.Database, task models.Post) (*mongo.InsertManyResult, error) {
+	PostCollection := db.Collection("Post")
+	var post = models.PostDB{
+		PostId:       task.PostId,
+		BoardId:      task.BoardId,
+		ChildBoardId: task.ChildBoardId,
+		PostTag:      task.PostTag,
+		PostTitle:    task.PostTitle,
+		Author:       task.Author,
+		Floor:        task.Floor,
+		CommentNum:   0,
+		LikeNum:      0,
+		Time:         task.Time,
+		LikedUsers:   make([]string, 0),
+	}
+
+	BlockCollection := db.Collection("Block")
+	BlockList := make([]interface{}, len(task.Content))
+	for i := range task.Content {
+		BlockList[i] = task.Content[i]
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := PostCollection.InsertOne(ctx, post)
+	if err != nil {
+		log.Println("Insert post Error", err)
+		return nil, err
+	}
+	res, err := BlockCollection.InsertMany(ctx, BlockList)
+	if err != nil {
+		log.Println("Insert blocks Error", err)
+		return nil, err
+	}
+
+	return res, nil
 }
 
 func GetVoteById(db *mongo.Database, query models.Vote) (*models.Vote, error) {

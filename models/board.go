@@ -1,6 +1,10 @@
 package models
 
-import "go.mongodb.org/mongo-driver/bson"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+)
 
 type Board struct {
 	BoardId     string       `bson:"boardId" json:"boardId"`
@@ -56,16 +60,17 @@ func (a *ChildBoard) ToQueryBson() bson.M {
 }
 
 type Vote struct {
-	VoteId         string   `bson:"voteId" json:"voteId"`
-	Launcher       string   `bson:"launcher" json:"launcher"`
-	BoardName      string   `bson:"boardName" json:"boardName"`
-	Img            string   `bson:"img" json:"img"`
-	Agree          int64    `bson:"agree" json:"agree"`
-	Disagree       int64    `bson:"disagree" json:"disagree"`
-	LauncherInfo   User     `bson:"launcherInfo" json:"launcherInfo"`
-	AgreedUsers    []string `bson:"agreedUsers" json:"agreedUsers"`
-	DisagreedUsers []string `bson:"disagreedUsers" json:"disagreedUsers"`
-	Reason         string   `bson:"reason" json:"reason"`
+	VoteId         string    `bson:"voteId" json:"voteId"`
+	Launcher       string    `bson:"launcher" json:"launcher"`
+	BoardName      string    `bson:"boardName" json:"boardName"`
+	Img            string    `bson:"img" json:"img"`
+	Agree          int64     `bson:"agree" json:"agree"`
+	Disagree       int64     `bson:"disagree" json:"disagree"`
+	LauncherInfo   User      `bson:"launcherInfo" json:"launcherInfo"`
+	AgreedUsers    []string  `bson:"agreedUsers" json:"agreedUsers"`
+	DisagreedUsers []string  `bson:"disagreedUsers" json:"disagreedUsers"`
+	Reason         string    `bson:"reason" json:"reason"`
+	Deadline       time.Time `bson:"deadline" json:"deadline"`
 }
 
 func (a *Vote) TableName() string {

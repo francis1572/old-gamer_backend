@@ -273,6 +273,7 @@ func GetPostDetail(database *mongo.Database, w http.ResponseWriter, r *http.Requ
 			Time:         post.Time,
 			LikedUsers:   post.LikedUsers,
 			Content:      post.Content,
+			Comments:     post.Comments,
 			Citations:    post.Citations,
 			AuthorInfo:   post.AuthorInfo,
 		}

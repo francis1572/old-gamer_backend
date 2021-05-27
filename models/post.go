@@ -15,6 +15,7 @@ type Post struct {
 	Author       string     `bson:"author" json:"author"`
 	Content      []Block    `bson:"content" json:"content"`
 	Floor        int64      `bson:"floor" json:"floor"`
+	Comments     []Comment  `bson:"comments" json:"comments"`
 	CommentNum   int64      `bson:"commentNum" json:"commentNum"`
 	LikeNum      int64      `bson:"likeNum" json:"likeNum"`
 	Time         time.Time  `bson:"time" json:"time"`
@@ -105,9 +106,9 @@ type Comment struct {
 	Tag        string    `bson:"tag" json:"tag"`
 	Floor      int64     `bson:"floor" json:"floor"`
 	Content    string    `bson:"content" json:"content"`
-	Author     User      `bson:"author" json:"author"`
+	Author     string    `bson:"author" json:"author"`
 	LikeNum    int64     `bson:"likeNum" json:"likeNum"`
-	LikedUsers []User    `bson:"likedUsers" json:"likedUsers"`
+	LikedUsers []string  `bson:"likedUsers" json:"likedUsers"`
 	Time       time.Time `bson:"time" json:"time"`
 }
 
@@ -116,8 +117,16 @@ func (a *Comment) TableName() string {
 }
 
 func (a *Comment) ToQueryBson() bson.M {
-	queryObject := bson.M{
-		"commentId": a.CommentId,
+	if a.PostId != "" {
+		queryObject := bson.M{
+			"postId": a.PostId,
+			"floor":  a.Floor,
+		}
+		return queryObject
+	} else {
+		queryObject := bson.M{
+			"commentId": a.CommentId,
+		}
+		return queryObject
 	}
-	return queryObject
 }

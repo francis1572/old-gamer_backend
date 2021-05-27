@@ -264,6 +264,25 @@ func GetPostsByPostId(db *mongo.Database, task models.Post) ([]*models.Post, err
 		}
 		log.Println("有通過第五階段", result.Citations)
 
+		comments, err := GetCommentsByFloor(db, models.Comment{PostId: result.PostId, Floor: result.Floor})
+		if err == nil {
+			for _, comment := range comments {
+				var temp = models.Comment{
+					CommentId:  comment.CommentId,
+					PostId:     comment.PostId,
+					Tag:        comment.Tag,
+					Floor:      comment.Floor,
+					Content:    comment.Content,
+					Author:     comment.Author,
+					LikeNum:    comment.LikeNum,
+					LikedUsers: comment.LikedUsers,
+					Time:       comment.Time,
+				}
+				result.Comments = append(result.Comments, temp)
+			}
+		}
+		log.Println("有通過第六階段", result.Comments)
+
 		posts = append(posts, &result)
 	}
 	// log.Println("GetUserInfo posts:", posts)
@@ -288,6 +307,25 @@ func GetBlocksByFloor(db *mongo.Database, task models.Block) ([]*models.Block, e
 		blocks = append(blocks, &result)
 	}
 	return blocks, nil
+}
+func GetCommentsByFloor(db *mongo.Database, task models.Comment) ([]*models.Comment, error) {
+	CommentCollection := db.Collection("Comment")
+	var comments []*models.Comment
+	cur, err := CommentCollection.Find(context.Background(), task.ToQueryBson())
+	if err != nil {
+		log.Println("Find answers Error", err)
+		return nil, err
+	}
+	for cur.Next(context.Background()) {
+		result := models.Comment{}
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Println("Decode answer Error", err)
+			return nil, err
+		}
+		comments = append(comments, &result)
+	}
+	return comments, nil
 }
 
 func GetCitesByFloor(db *mongo.Database, task models.Citation) ([]*models.Citation, error) {

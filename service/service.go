@@ -369,12 +369,16 @@ func InsertPost(db *mongo.Database, task models.Post) (*mongo.InsertManyResult, 
 		Time:         time.Now(),
 		LikedUsers:   make([]string, 0),
 	}
+	postId := uuid.New().String()
 	if post.PostId == "" {
-		post.PostId = uuid.New().String()
+		post.PostId = postId
 	}
 
 	BlockCollection := db.Collection("Block")
 	BlockList := make([]interface{}, len(task.Content))
+	for i := range task.Content {
+		task.Content[i].PostId = postId
+	}
 	for i := range task.Content {
 		BlockList[i] = task.Content[i]
 	}

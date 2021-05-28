@@ -304,6 +304,25 @@ func Post(database *mongo.Database, w http.ResponseWriter, r *http.Request) erro
 	return nil
 }
 
+func EditPost(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.Post
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	err = service.UpdatePost(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	return nil
+}
+
 func PostComment(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	var requestBody models.Comment
 
@@ -316,6 +335,101 @@ func PostComment(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 	}
 
 	_, err = service.InsertComment(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	return nil
+}
+
+func EditComment(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.Comment
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	err = service.UpdateComment(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	return nil
+}
+
+func EditUserInfo(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.User
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	err = service.UpdateUser(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	return nil
+}
+
+func LikePost(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.Post
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	err = service.LikePost(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	return nil
+}
+
+func LikeComment(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.Comment
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	err = service.LikeComment(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	return nil
+}
+
+func MakeCitation(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.Citation
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	_, err = service.InsertCitation(database, requestBody)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err

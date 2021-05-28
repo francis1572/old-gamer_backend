@@ -16,6 +16,9 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/GoogleSignIn":
 		respond.GoogleSignIn(Database, w, r)
 		return
+	case "/EditUserInfo":
+		respond.EditUserInfo(Database, w, r)
+		return
 	case "/GetBoardById":
 		respond.GetBoardById(Database, w, r)
 		return
@@ -31,8 +34,26 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/Post":
 		respond.Post(Database, w, r)
 		return
+	case "/LikePost":
+		respond.LikePost(Database, w, r)
+		return
+	case "/EditPost":
+		respond.EditPost(Database, w, r)
+		return
+	case "/PostComment":
+		respond.PostComment(Database, w, r)
+		return
+	case "/LikeComment":
+		respond.LikeComment(Database, w, r)
+		return
+	case "/EditComment":
+		respond.EditComment(Database, w, r)
+		return
 	case "/GetPostDetail":
 		respond.GetPostDetail(Database, w, r)
+		return
+	case "/MakeCitation":
+		respond.MakeCitation(Database, w, r)
 		return
 	case "/GetVote":
 		respond.GetVote(Database, w, r)

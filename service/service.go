@@ -11,6 +11,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func GetUser(db *mongo.Database, queryBson bson.M) (*models.User, error) {
@@ -391,6 +392,53 @@ func InsertPost(db *mongo.Database, task models.Post) (*mongo.InsertManyResult, 
 	return res, nil
 }
 
+func UpdatePost(db *mongo.Database, task models.Post) error {
+	PostCollection := db.Collection("Post")
+	var post = models.PostDB{
+		PostId:       task.PostId,
+		BoardId:      task.BoardId,
+		ChildBoardId: task.ChildBoardId,
+		PostTag:      task.PostTag,
+		PostTitle:    task.PostTitle,
+		Author:       task.Author,
+		Floor:        task.Floor,
+		CommentNum:   task.CommentNum,
+		LikeNum:      task.LikeNum,
+		Time:         task.Time,
+		LikedUsers:   task.LikedUsers,
+	}
+
+	BlockCollection := db.Collection("Block")
+	BlockList := make([]models.Block, len(task.Content))
+	for i := range task.Content {
+		BlockList[i] = task.Content[i]
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"postId": post.PostId, "floor": post.Floor}
+	update := bson.M{"$set": bson.M{"postTag": task.PostTag, "postTitle": task.PostTitle}}
+	_, err := PostCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Println("Insert post Error", err)
+		return err
+	}
+
+	for _, block := range BlockList {
+		opts := options.Update().SetUpsert(true)
+		filter = bson.M{"postId": block.PostId, "floor": block.Floor, "blockId": block.BlockId}
+		update = bson.M{"$set": bson.M{"subtitle": block.Subtitle, "content": block.Content}}
+		_, err = BlockCollection.UpdateOne(ctx, filter, update, opts)
+		if err != nil {
+			log.Println("Insert post Error", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
 func InsertComment(db *mongo.Database, task models.Comment) (*mongo.InsertOneResult, error) {
 	CommentCollection := db.Collection("Comment")
 	var comment = models.Comment{
@@ -411,6 +459,122 @@ func InsertComment(db *mongo.Database, task models.Comment) (*mongo.InsertOneRes
 	res, err := CommentCollection.InsertOne(ctx, comment)
 	if err != nil {
 		log.Println("Insert post Error", err)
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func UpdateComment(db *mongo.Database, task models.Comment) error {
+	CommentCollection := db.Collection("Comment")
+	var comment = models.Comment{
+		CommentId:  task.CommentId,
+		PostId:     task.PostId,
+		Tag:        task.Tag,
+		Floor:      task.Floor,
+		Content:    task.Content,
+		Author:     task.Author,
+		LikeNum:    task.LikeNum,
+		LikedUsers: task.LikedUsers,
+		Time:       task.Time,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"commentId": comment.CommentId}
+	update := bson.M{"$set": bson.M{"tag": comment.Tag, "content": comment.Content}}
+	_, err := CommentCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Println("Insert comment Error", err)
+		return err
+	}
+
+	return nil
+}
+
+func UpdateUser(db *mongo.Database, task models.User) error {
+	UserCollection := db.Collection("GUser")
+	var user = models.User{
+		UserId:           task.UserId,
+		SelfIntroduction: task.SelfIntroduction,
+		InterestGames:    task.InterestGames,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"userId": user.UserId}
+	update := bson.M{"$set": bson.M{"selfIntroduction": user.SelfIntroduction, "interestGames": user.InterestGames}}
+	_, err := UserCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Println("Insert comment Error", err)
+		return err
+	}
+
+	return nil
+}
+
+func LikePost(db *mongo.Database, task models.Post) error {
+	PostCollection := db.Collection("Post")
+	var post models.Post
+	result := PostCollection.FindOne(context.Background(), task.ToQueryBson())
+	err := result.Decode(&post)
+	post.LikeNum = post.LikeNum + 1
+	post.LikedUsers = append(post.LikedUsers, task.Author)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"postId": post.PostId}
+	update := bson.M{"$set": bson.M{"likeNum": post.LikeNum, "likedUsers": post.LikedUsers}}
+	_, err = PostCollection.UpdateOne(ctx, filter, update)
+
+	if err != nil {
+		log.Println("Update Comment Error", err)
+		return err
+	}
+	return err
+}
+
+func LikeComment(db *mongo.Database, task models.Comment) error {
+	CommentCollection := db.Collection("Comment")
+	var comment models.Comment
+	result := CommentCollection.FindOne(context.Background(), task.ToQueryBson())
+	err := result.Decode(&comment)
+	comment.LikeNum = comment.LikeNum + 1
+	comment.LikedUsers = append(comment.LikedUsers, task.Author)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	filter := bson.M{"commentId": task.CommentId}
+	update := bson.M{"$set": bson.M{"likeNum": comment.LikeNum, "likedUsers": comment.LikedUsers}}
+	_, err = CommentCollection.UpdateOne(ctx, filter, update)
+
+	if err != nil {
+		log.Println("Update Comment Error", err)
+		return err
+	}
+	return err
+}
+
+func InsertCitation(db *mongo.Database, task models.Citation) (*mongo.InsertOneResult, error) {
+	CitationCollection := db.Collection("Citation")
+	var citation = models.Citation{
+		CitationId: task.CitationId,
+		PostId:     task.PostId,
+		Floor:      task.Floor,
+		CitedFloor: task.CitedFloor,
+		BlockId:    task.BlockId,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	res, err := CitationCollection.InsertOne(ctx, citation)
+	if err != nil {
+		log.Println("Insert Citation Error", err)
 		return nil, err
 	}
 

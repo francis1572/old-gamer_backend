@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -195,6 +196,8 @@ func GetPostsByUserId(db *mongo.Database, task models.Post) ([]*models.Post, err
 }
 
 func GetVotesByUserId(db *mongo.Database, task models.Vote) ([]*models.Vote, error) {
+	UpdateAllVotesStatus(db)
+
 	VoteCollection := db.Collection("Vote")
 	var votes []*models.Vote
 	cur, err := VoteCollection.Find(context.Background(), task.ToQueryBson())
@@ -415,6 +418,8 @@ func InsertComment(db *mongo.Database, task models.Comment) (*mongo.InsertOneRes
 }
 
 func GetVoteById(db *mongo.Database, query models.Vote) (*models.Vote, error) {
+	UpdateAllVotesStatus(db)
+
 	VoteCollection := db.Collection("Vote")
 	var vote models.Vote
 	result := VoteCollection.FindOne(context.Background(), query.ToQueryBson())
@@ -430,7 +435,9 @@ func GetVoteById(db *mongo.Database, query models.Vote) (*models.Vote, error) {
 	return &vote, nil
 }
 
-func UpdateVote(db *mongo.Database, queryBson bson.M) (*mongo.UpdateResult, error) {
+func Vote(db *mongo.Database, queryBson bson.M) (*mongo.UpdateResult, error) {
+	UpdateAllVotesStatus(db)
+
 	VoteCollection := db.Collection("Vote")
 	var vote models.Vote
 	result := VoteCollection.FindOne(context.Background(), bson.M{"voteId": queryBson["voteId"]})
@@ -440,22 +447,48 @@ func UpdateVote(db *mongo.Database, queryBson bson.M) (*mongo.UpdateResult, erro
 		return nil, err
 	}
 
+	SystemCollection := db.Collection("System")
+	var system models.System
+	result = SystemCollection.FindOne(context.Background(), bson.M{})
+	err = result.Decode(&system)
+	if err != nil {
+		log.Println("Get System Error", err)
+		return nil, err
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	// Check if the user voted
 	if contains(vote.DisagreedUsers, queryBson["userId"].(string)) || contains(vote.AgreedUsers, queryBson["userId"].(string)) {
 		log.Println("User voted")
 		return nil, nil
 	}
 
+	// Check if the vote ended
+	if vote.Status != "active" {
+		log.Println("Vote ended")
+		return nil, nil
+	}
+
 	var update bson.M
+	status := vote.Status
 	// type of queryBson["decision"] is float
 	if queryBson["decision"] == 0. {
-		vote.DisagreedUsers = append(vote.DisagreedUsers, queryBson["userId"].(string))
-		update = bson.M{"$set": bson.M{"disagree": vote.Disagree + 1, "disagreedUsers": vote.DisagreedUsers}}
+		update = bson.M{"$set": bson.M{
+			"disagree":       vote.Disagree + 1,
+			"disagreedUsers": append(vote.DisagreedUsers, queryBson["userId"].(string)),
+		}}
 	} else if queryBson["decision"] == 1. {
-		vote.AgreedUsers = append(vote.AgreedUsers, queryBson["userId"].(string))
-		update = bson.M{"$set": bson.M{"agree": vote.Agree + 1, "agreedUsers": vote.AgreedUsers}}
+		if vote.Agree+1 == system.VoteThreshold {
+			status = "success"
+			LaunchBoard(db, vote)
+		}
+		update = bson.M{"$set": bson.M{
+			"agree":       vote.Agree + 1,
+			"agreedUsers": append(vote.AgreedUsers, queryBson["userId"].(string)),
+			"status":      status,
+		}}
 	} else {
 		log.Println("Wrong value of decision")
 		return nil, nil
@@ -463,15 +496,17 @@ func UpdateVote(db *mongo.Database, queryBson bson.M) (*mongo.UpdateResult, erro
 	filter := bson.M{"voteId": queryBson["voteId"]}
 	res, err := VoteCollection.UpdateOne(ctx, filter, update)
 	if err != nil {
-		log.Println("Update Vote Error", err)
+		log.Println("Vote Error", err)
 		return nil, err
 	}
 	return res, nil
 }
 
-func GetVote(db *mongo.Database) ([]*models.Vote, error) {
+func GetVote(db *mongo.Database) ([]models.Vote, error) {
+	UpdateAllVotesStatus(db)
+
 	VoteCollection := db.Collection("Vote")
-	var votes []*models.Vote
+	var votes []models.Vote
 	cur, err := VoteCollection.Find(context.Background(), bson.M{})
 	if err != nil {
 		log.Println("GetVote Error", err)
@@ -481,16 +516,16 @@ func GetVote(db *mongo.Database) ([]*models.Vote, error) {
 	for cur.Next(context.Background()) {
 		result := models.Vote{}
 		err := cur.Decode(&result)
+		// log.Println("!!!", result.VoteId, result.Status)
 		if err != nil {
 			log.Println("Decode Vote Error", err)
 			return nil, err
 		}
-		votes = append(votes, &result)
+		votes = append(votes, result)
 	}
 	return votes, nil
 }
 
-// TODO: Check whether the Vote exists
 func LaunchVote(db *mongo.Database, query map[string]string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -516,11 +551,18 @@ func LaunchVote(db *mongo.Database, query map[string]string) (string, error) {
 	// Save Vote into database
 	VoteCollection := db.Collection("Vote")
 	var vote = models.Vote{
-		VoteId:    "vote" + strconv.Itoa(voteId),
-		Launcher:  query["userId"],
-		BoardName: query["boardName"],
-		Img:       query["imgUrl"],
-		Reason:    query["reason"],
+		VoteId:         "vote" + strconv.Itoa(voteId),
+		Launcher:       query["userId"],
+		BoardName:      query["boardName"],
+		DomainName:     query["domainName"],
+		Img:            query["imgUrl"],
+		Reason:         query["reason"],
+		Agree:          1,
+		Disagree:       0,
+		AgreedUsers:    []string{query["userId"]},
+		DisagreedUsers: make([]string, 0),
+		Deadline:       time.Now().AddDate(0, 1, 0),
+		Status:         "active",
 	}
 	_, voteErr := VoteCollection.InsertOne(ctx, vote)
 	if voteErr != nil {
@@ -544,6 +586,74 @@ func LaunchVote(db *mongo.Database, query map[string]string) (string, error) {
 	}
 
 	return vote.VoteId, nil
+}
+
+func UpdateAllVotesStatus(db *mongo.Database) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	VoteCollection := db.Collection("Vote")
+	var votes []*models.Vote
+	cur, err := VoteCollection.Find(context.Background(), bson.M{})
+	if err != nil {
+		log.Println("GetVote Error", err)
+	}
+
+	for cur.Next(context.Background()) {
+		result := models.Vote{}
+		err := cur.Decode(&result)
+		if err != nil {
+			log.Println("Decode Vote Error", err)
+		}
+		votes = append(votes, &result)
+	}
+
+	for _, vote := range votes {
+		if vote.Status == "active" {
+			if time.Now().After(vote.Deadline) {
+				filter := bson.M{"voteId": vote.VoteId}
+				update := bson.M{"$set": bson.M{"status": "fail"}}
+				_, err := VoteCollection.UpdateOne(ctx, filter, update)
+				if err != nil {
+					log.Println("Update Vote Status Error", err)
+				}
+			}
+		}
+	}
+}
+
+func LaunchBoard(db *mongo.Database, vote models.Vote) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	SystemCollection := db.Collection("System")
+	var system models.System
+	result := SystemCollection.FindOne(context.Background(), bson.M{})
+	err := result.Decode(&system)
+	if err != nil {
+		log.Println("Get System Error", err)
+	}
+	boardId := system.TotalBoards
+	update := bson.M{"$set": bson.M{"totalBoards": system.TotalBoards + 1}}
+	filter := bson.M{"totalBoards": system.TotalBoards}
+	_, err = SystemCollection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		log.Println("Update System Error", err)
+	}
+
+	board := models.Board{
+		BoardId:     "bd" + fmt.Sprint(boardId),
+		BoardName:   vote.BoardName,
+		DomainName:  vote.DomainName,
+		PostNum:     0,
+		Img:         vote.Img,
+		ChildBoards: make([]models.ChildBoard, 0),
+	}
+	BoardCollection := db.Collection("Board")
+	_, err = BoardCollection.InsertOne(ctx, board)
+	if err != nil {
+		log.Println("Insert board Error", err)
+	}
 }
 
 func contains(s []string, str string) bool {

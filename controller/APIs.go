@@ -339,30 +339,8 @@ func GetVote(database *mongo.Database, w http.ResponseWriter, r *http.Request) e
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return err
 		}
-
-		vote.LauncherInfo.Name = user.Name
-		vote.LauncherInfo.AccessToken = user.AccessToken
-		vote.LauncherInfo.ImageUrl = user.ImageUrl
-		vote.LauncherInfo.Email = user.Email
-		vote.LauncherInfo.FamilyName = user.FamilyName
-		vote.LauncherInfo.GivenName = user.GivenName
-		vote.LauncherInfo.UserId = user.UserId
-		vote.LauncherInfo.SelfIntroduction = user.SelfIntroduction
-		vote.LauncherInfo.InterestGames = user.InterestGames
-
-		var temp = models.Vote{
-			VoteId:         vote.VoteId,
-			Launcher:       vote.Launcher,
-			BoardName:      vote.BoardName,
-			Img:            vote.Img,
-			Agree:          vote.Agree,
-			Disagree:       vote.Disagree,
-			LauncherInfo:   vote.LauncherInfo,
-			AgreedUsers:    vote.AgreedUsers,
-			DisagreedUsers: vote.DisagreedUsers,
-			Reason:         vote.Reason,
-		}
-		response = append(response, temp)
+		vote.LauncherInfo = *user
+		response = append(response, vote)
 	}
 
 	jsondata, _ := json.Marshal(response)
@@ -400,7 +378,7 @@ func Vote(database *mongo.Database, w http.ResponseWriter, r *http.Request) erro
 	}
 	log.Println("Vote queryInfo:", requestBody)
 
-	res, err := service.UpdateVote(database, requestBody)
+	res, err := service.Vote(database, requestBody)
 	if err != nil {
 		log.Println("UpdateVote Error", res)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -408,23 +386,10 @@ func Vote(database *mongo.Database, w http.ResponseWriter, r *http.Request) erro
 	}
 
 	// Get Vote to check whether the update is done
-	vote, err := service.GetVoteById(database, models.Vote{VoteId: requestBody["voteId"].(string)})
+	response, err := service.GetVoteById(database, models.Vote{VoteId: requestBody["voteId"].(string)})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
-	}
-
-	var response = models.Vote{
-		VoteId:         vote.VoteId,
-		Launcher:       vote.Launcher,
-		BoardName:      vote.BoardName,
-		Img:            vote.Img,
-		Agree:          vote.Agree,
-		Disagree:       vote.Disagree,
-		LauncherInfo:   vote.LauncherInfo,
-		AgreedUsers:    vote.AgreedUsers,
-		DisagreedUsers: vote.DisagreedUsers,
-		Reason:         vote.Reason,
 	}
 
 	jsondata, _ := json.Marshal(response)
@@ -449,23 +414,10 @@ func LaunchVote(database *mongo.Database, w http.ResponseWriter, r *http.Request
 	}
 
 	// Get Vote to check whether LaunchVote is done
-	vote, err := service.GetVoteById(database, models.Vote{VoteId: voteId})
+	response, err := service.GetVoteById(database, models.Vote{VoteId: voteId})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err
-	}
-
-	var response = models.Vote{
-		VoteId:         vote.VoteId,
-		Launcher:       vote.Launcher,
-		BoardName:      vote.BoardName,
-		Img:            vote.Img,
-		Agree:          vote.Agree,
-		Disagree:       vote.Disagree,
-		LauncherInfo:   vote.LauncherInfo,
-		AgreedUsers:    vote.AgreedUsers,
-		DisagreedUsers: vote.DisagreedUsers,
-		Reason:         vote.Reason,
 	}
 
 	jsondata, _ := json.Marshal(response)

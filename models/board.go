@@ -63,6 +63,7 @@ type Vote struct {
 	VoteId         string    `bson:"voteId" json:"voteId"`
 	Launcher       string    `bson:"launcher" json:"launcher"`
 	BoardName      string    `bson:"boardName" json:"boardName"`
+	DomainName     string    `bson:"domainName" json:"domainName"`
 	Img            string    `bson:"img" json:"img"`
 	Agree          int64     `bson:"agree" json:"agree"`
 	Disagree       int64     `bson:"disagree" json:"disagree"`
@@ -71,6 +72,7 @@ type Vote struct {
 	DisagreedUsers []string  `bson:"disagreedUsers" json:"disagreedUsers"`
 	Reason         string    `bson:"reason" json:"reason"`
 	Deadline       time.Time `bson:"deadline" json:"deadline"`
+	Status         string    `bson:"status" json:"status"`
 }
 
 func (a *Vote) TableName() string {

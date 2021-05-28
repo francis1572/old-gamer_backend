@@ -29,12 +29,19 @@ func (a *Post) TableName() string {
 }
 
 func (a *Post) ToQueryBson() bson.M {
-	if a.PostId != "" {
+	if a.PostId != "" && a.Floor != -1 {
+		queryObject := bson.M{
+			"postId": a.PostId,
+			"floor":  a.Floor,
+		}
+		return queryObject
+	} else if a.PostId != "" && a.Floor == -1 {
 		queryObject := bson.M{
 			"postId": a.PostId,
 		}
 		return queryObject
-	} else {
+	}
+	{
 		queryObject := bson.M{
 			"author": a.Author,
 		}

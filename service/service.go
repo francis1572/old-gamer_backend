@@ -224,6 +224,7 @@ func GetVotesByUserId(db *mongo.Database, task models.Vote) ([]*models.Vote, err
 func GetPostsByPostId(db *mongo.Database, task models.Post) ([]*models.Post, error) {
 	PostCollection := db.Collection("Post")
 	var posts []*models.Post
+	log.Println("task.ToQueryBson()", task.ToQueryBson())
 	cur, err := PostCollection.Find(context.Background(), task.ToQueryBson())
 	// log.Println("GetUserInfo posts:", task.ToQueryBson())
 	if err != nil {
@@ -536,7 +537,7 @@ func LikePost(db *mongo.Database, task models.Post) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	filter := bson.M{"postId": post.PostId, "floor": post.Floor}
+	filter := bson.M{"postId": post.PostId, "floor": task.Floor}
 	update := bson.M{"$set": bson.M{"likeNum": post.LikeNum, "likedUsers": post.LikedUsers}}
 	_, err = PostCollection.UpdateOne(ctx, filter, update)
 

@@ -245,7 +245,7 @@ func GetUserInfo(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 }
 
 func GetPostDetail(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
-	var requestBody map[string]string
+	var requestBody models.Post
 	err := json.NewDecoder(r.Body).Decode(&requestBody)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -253,7 +253,8 @@ func GetPostDetail(database *mongo.Database, w http.ResponseWriter, r *http.Requ
 	}
 	log.Println("GetPostDetail queryInfo:", requestBody)
 
-	posts, err := service.GetPostsByPostId(database, models.Post{PostId: requestBody["postId"]})
+	posts, err := service.GetPostsByPostId(database, requestBody)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return err

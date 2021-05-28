@@ -9,6 +9,7 @@ import (
 
 	"final_backend/models"
 
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -368,6 +369,9 @@ func InsertPost(db *mongo.Database, task models.Post) (*mongo.InsertManyResult, 
 		Time:         task.Time,
 		LikedUsers:   make([]string, 0),
 	}
+	if post.PostId == "" {
+		post.PostId = uuid.New().String()
+	}
 
 	BlockCollection := db.Collection("Block")
 	BlockList := make([]interface{}, len(task.Content))
@@ -442,7 +446,7 @@ func UpdatePost(db *mongo.Database, task models.Post) error {
 func InsertComment(db *mongo.Database, task models.Comment) (*mongo.InsertOneResult, error) {
 	CommentCollection := db.Collection("Comment")
 	var comment = models.Comment{
-		CommentId:  task.CommentId,
+		CommentId:  uuid.New().String(),
 		PostId:     task.PostId,
 		Tag:        task.Tag,
 		Floor:      task.Floor,
@@ -516,6 +520,8 @@ func UpdateUser(db *mongo.Database, task models.User) error {
 }
 
 func LikePost(db *mongo.Database, task models.Post) error {
+	// newID := uuid.New().String()
+	// log.Println(newID)
 	PostCollection := db.Collection("Post")
 	var post models.Post
 	result := PostCollection.FindOne(context.Background(), task.ToQueryBson())
@@ -562,7 +568,7 @@ func LikeComment(db *mongo.Database, task models.Comment) error {
 func InsertCitation(db *mongo.Database, task models.Citation) (*mongo.InsertOneResult, error) {
 	CitationCollection := db.Collection("Citation")
 	var citation = models.Citation{
-		CitationId: task.CitationId,
+		CitationId: uuid.New().String(),
 		PostId:     task.PostId,
 		Floor:      task.Floor,
 		CitedFloor: task.CitedFloor,

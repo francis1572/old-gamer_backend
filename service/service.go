@@ -366,7 +366,7 @@ func InsertPost(db *mongo.Database, task models.Post) (*mongo.InsertManyResult, 
 		Floor:        task.Floor,
 		CommentNum:   0,
 		LikeNum:      0,
-		Time:         task.Time,
+		Time:         time.Now(),
 		LikedUsers:   make([]string, 0),
 	}
 	if post.PostId == "" {
@@ -454,7 +454,7 @@ func InsertComment(db *mongo.Database, task models.Comment) (*mongo.InsertOneRes
 		Author:     task.Author,
 		LikeNum:    0,
 		LikedUsers: make([]string, 0),
-		Time:       task.Time,
+		Time:       time.Now(),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

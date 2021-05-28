@@ -388,6 +388,32 @@ func InsertPost(db *mongo.Database, task models.Post) (*mongo.InsertManyResult, 
 	return res, nil
 }
 
+func InsertComment(db *mongo.Database, task models.Comment) (*mongo.InsertOneResult, error) {
+	CommentCollection := db.Collection("Comment")
+	var comment = models.Comment{
+		CommentId:  task.CommentId,
+		PostId:     task.PostId,
+		Tag:        task.Tag,
+		Floor:      task.Floor,
+		Content:    task.Content,
+		Author:     task.Author,
+		LikeNum:    0,
+		LikedUsers: make([]string, 0),
+		Time:       task.Time,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	res, err := CommentCollection.InsertOne(ctx, comment)
+	if err != nil {
+		log.Println("Insert post Error", err)
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func GetVoteById(db *mongo.Database, query models.Vote) (*models.Vote, error) {
 	VoteCollection := db.Collection("Vote")
 	var vote models.Vote

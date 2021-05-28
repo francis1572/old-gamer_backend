@@ -536,7 +536,7 @@ func LikePost(db *mongo.Database, task models.Post) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	filter := bson.M{"postId": post.PostId}
+	filter := bson.M{"postId": post.PostId, "floor": post.Floor}
 	update := bson.M{"$set": bson.M{"likeNum": post.LikeNum, "likedUsers": post.LikedUsers}}
 	_, err = PostCollection.UpdateOne(ctx, filter, update)
 

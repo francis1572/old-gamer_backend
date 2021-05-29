@@ -13,6 +13,7 @@ type Post struct {
 	PostTag      string     `bson:"postTag" json:"postTag"`
 	PostTitle    string     `bson:"postTitle" json:"postTitle"`
 	Author       string     `bson:"author" json:"author"`
+	AuthorName   string     `bson:"authorName" json:"authorName"`
 	Content      []Block    `bson:"content" json:"content"`
 	Floor        int64      `bson:"floor" json:"floor"`
 	Comments     []Comment  `bson:"comments" json:"comments"`
@@ -114,6 +115,7 @@ type Comment struct {
 	Floor      int64     `bson:"floor" json:"floor"`
 	Content    string    `bson:"content" json:"content"`
 	Author     string    `bson:"author" json:"author"`
+	AuthorName string    `bson:"authorName" json:"authorName"`
 	LikeNum    int64     `bson:"likeNum" json:"likeNum"`
 	LikedUsers []string  `bson:"likedUsers" json:"likedUsers"`
 	Time       time.Time `bson:"time" json:"time"`
@@ -145,6 +147,7 @@ type PostDB struct {
 	PostTag      string    `bson:"postTag" json:"postTag"`
 	PostTitle    string    `bson:"postTitle" json:"postTitle"`
 	Author       string    `bson:"author" json:"author"`
+	AuthorName   string    `bson:"authorName" json:"authorName"`
 	Floor        int64     `bson:"floor" json:"floor"`
 	CommentNum   int64     `bson:"commentNum" json:"commentNum"`
 	LikeNum      int64     `bson:"likeNum" json:"likeNum"`

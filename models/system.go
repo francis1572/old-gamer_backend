@@ -5,3 +5,13 @@ type System struct {
 	VoteThreshold int64 `bson:"voteThreshold" json:"voteThreshold"`
 	TotalBoards   int   `bson:"totalBoards" json:"totalBoards"`
 }
+
+type Notification struct {
+	UserId     string `bson:"userId" json:"userId"`
+	NotifyType string `bson:"notifyType" json:"notifyType"`
+	Author     string `bson:"author" json:"author"`
+	AuthorName string `bson:"authorName" json:"authorName"`
+	PostId     string `bson:"postId" json:"postId"`
+	Floor      int64  `bson:"floor" json:"floor"`
+	VoteId     string `bson:"voteId" json:"voteId"`
+}

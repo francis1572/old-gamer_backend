@@ -280,6 +280,7 @@ func GetPostsByPostId(db *mongo.Database, task models.Post) ([]*models.Post, err
 					Floor:      comment.Floor,
 					Content:    comment.Content,
 					Author:     comment.Author,
+					AuthorName: comment.AuthorName,
 					LikeNum:    comment.LikeNum,
 					LikedUsers: comment.LikedUsers,
 					Time:       comment.Time,

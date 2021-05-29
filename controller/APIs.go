@@ -541,3 +541,60 @@ func LaunchVote(database *mongo.Database, w http.ResponseWriter, r *http.Request
 	_, _ = w.Write(jsondata)
 	return nil
 }
+
+func DeletePost(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.Post
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	err = service.DeletePost(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	return nil
+}
+
+func DeleteComment(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.Comment
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	err = service.DeleteComment(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	return nil
+}
+
+func DeleteCitation(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.Citation
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	err = service.DeleteCitation(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	return nil
+}

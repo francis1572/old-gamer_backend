@@ -40,6 +40,9 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/EditPost":
 		respond.EditPost(Database, w, r)
 		return
+	case "/DeletePost":
+		respond.DeletePost(Database, w, r)
+		return
 	case "/PostComment":
 		respond.PostComment(Database, w, r)
 		return
@@ -49,11 +52,17 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/EditComment":
 		respond.EditComment(Database, w, r)
 		return
+	case "/DeleteComment":
+		respond.DeleteComment(Database, w, r)
+		return
 	case "/GetPostDetail":
 		respond.GetPostDetail(Database, w, r)
 		return
 	case "/MakeCitation":
 		respond.MakeCitation(Database, w, r)
+		return
+	case "/DeleteCitation":
+		respond.DeleteCitation(Database, w, r)
 		return
 	case "/GetVote":
 		respond.GetVote(Database, w, r)

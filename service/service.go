@@ -450,6 +450,50 @@ func UpdatePost(db *mongo.Database, task models.Post) error {
 	return nil
 }
 
+func DeletePost(db *mongo.Database, task models.Post) error {
+	PostCollection := db.Collection("Post")
+	BlockCollection := db.Collection("Block")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_, err := PostCollection.DeleteOne(ctx, bson.M{"postId": task.PostId, "floor": task.Floor})
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, err = BlockCollection.DeleteMany(ctx, bson.M{"postId": task.PostId, "floor": task.Floor})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return nil
+}
+
+func DeleteComment(db *mongo.Database, task models.Comment) error {
+	CommentCollection := db.Collection("Comment")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_, err := CommentCollection.DeleteOne(ctx, bson.M{"commentId": task.CommentId})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return nil
+}
+
+func DeleteCitation(db *mongo.Database, task models.Citation) error {
+	CitationCollection := db.Collection("Citation")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	_, err := CitationCollection.DeleteOne(ctx, bson.M{"citationId": task.CitationId})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return nil
+}
+
 func InsertComment(db *mongo.Database, task models.Comment) (*mongo.InsertOneResult, error) {
 	CommentCollection := db.Collection("Comment")
 	var comment = models.Comment{

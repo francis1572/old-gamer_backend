@@ -452,18 +452,29 @@ func UpdatePost(db *mongo.Database, task models.Post) error {
 }
 
 func DeletePost(db *mongo.Database, task models.Post) error {
-	PostCollection := db.Collection("Post")
+	// PostCollection := db.Collection("Post")
 	BlockCollection := db.Collection("Block")
+	var emptyBlock = models.Block{
+		PostId:   task.PostId,
+		Floor:    task.Floor,
+		BlockId:  0,
+		Subtitle: "此篇文章已被刪除。",
+		Content:  "此篇文章已被刪除。",
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	_, err := PostCollection.DeleteOne(ctx, bson.M{"postId": task.PostId, "floor": task.Floor})
+	// _, err := PostCollection.DeleteOne(ctx, bson.M{"postId": task.PostId, "floor": task.Floor})
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	_, err := BlockCollection.DeleteMany(ctx, bson.M{"postId": task.PostId, "floor": task.Floor})
 	if err != nil {
 		log.Fatal(err)
 	}
-	_, err = BlockCollection.DeleteMany(ctx, bson.M{"postId": task.PostId, "floor": task.Floor})
+	_, err = BlockCollection.InsertOne(ctx, emptyBlock)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("Insert post Error", err)
 	}
 
 	return nil

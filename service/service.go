@@ -891,6 +891,19 @@ func LaunchBoard(db *mongo.Database, vote models.Vote) {
 	}
 }
 
+func GetNotification(db *mongo.Database, query models.User) (*models.Notification, error) {
+	NotificationCollection := db.Collection("Notification")
+	var notification *models.Notification
+	result := NotificationCollection.FindOneAndDelete(context.Background(), query.ToQueryBson())
+	err := result.Decode(&notification)
+	if err != nil {
+		log.Println("Decode notification Error", err)
+		return nil, err
+	}
+
+	return notification, nil
+}
+
 func contains(s []string, str string) bool {
 	for _, v := range s {
 		if v == str {

@@ -76,6 +76,9 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/LaunchVote":
 		respond.LaunchVote(Database, w, r)
 		return
+	case "/GetNotification":
+		respond.GetNotification(Database, w, r)
+		return
 	default:
 		break
 	}

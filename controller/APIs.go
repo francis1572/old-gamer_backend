@@ -598,3 +598,24 @@ func DeleteCitation(database *mongo.Database, w http.ResponseWriter, r *http.Req
 	}
 	return nil
 }
+
+func GetNotification(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody map[string]string
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	log.Println("GetNotification queryInfo:", requestBody)
+
+	notification, _ := service.GetNotification(database, models.User{UserId: requestBody["userId"]})
+	if notification == nil {
+		log.Println("No notification")
+		jsondata, _ := json.Marshal("No notification")
+		_, _ = w.Write(jsondata)
+	} else {
+		jsondata, _ := json.Marshal(notification)
+		_, _ = w.Write(jsondata)
+	}
+	return nil
+}

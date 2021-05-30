@@ -358,6 +358,35 @@ func GetCitesByFloor(db *mongo.Database, task models.Citation) ([]*models.Citati
 
 func InsertPost(db *mongo.Database, task models.Post) (*mongo.InsertManyResult, error) {
 	PostCollection := db.Collection("Post")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if task.Floor != 1 {
+		NotificationCollection := db.Collection("Notification")
+		var topPost = models.Post{}
+		result := PostCollection.FindOne(context.Background(), bson.M{"postId": task.PostId, "floor": 1})
+		err := result.Decode(&topPost)
+		// log.Println("Success", board)
+		if err != nil {
+			log.Println("Decode task Error", err)
+			return nil, err
+		}
+		floorOwner := topPost.Author
+		var notification = models.Notification{
+			UserId:     floorOwner,
+			NotifyType: "repost",
+			Author:     task.Author,
+			AuthorName: task.AuthorName,
+			PostId:     task.PostId,
+			Floor:      task.Floor,
+			VoteId:     "",
+		}
+		_, err = NotificationCollection.InsertOne(ctx, notification)
+		if err != nil {
+			log.Println("Insert notification Error", err)
+			return nil, err
+		}
+	}
+
 	var post = models.PostDB{
 		PostId:       task.PostId,
 		BoardId:      task.BoardId,
@@ -385,9 +414,6 @@ func InsertPost(db *mongo.Database, task models.Post) (*mongo.InsertManyResult, 
 	for i := range task.Content {
 		BlockList[i] = task.Content[i]
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
 
 	_, err := PostCollection.InsertOne(ctx, post)
 	if err != nil {
@@ -508,6 +534,19 @@ func DeleteCitation(db *mongo.Database, task models.Citation) error {
 
 func InsertComment(db *mongo.Database, task models.Comment) (*mongo.InsertOneResult, error) {
 	CommentCollection := db.Collection("Comment")
+	PostCollection := db.Collection("Post")
+	NotificationCollection := db.Collection("Notification")
+	var post = models.Post{}
+
+	result := PostCollection.FindOne(context.Background(), bson.M{"postId": task.PostId, "floor": task.Floor})
+	err := result.Decode(&post)
+	// log.Println("Success", board)
+	if err != nil {
+		log.Println("Decode task Error", err)
+		return nil, err
+	}
+	floorOwner := post.Author
+
 	var comment = models.Comment{
 		CommentId:  uuid.New().String(),
 		PostId:     task.PostId,
@@ -520,6 +559,15 @@ func InsertComment(db *mongo.Database, task models.Comment) (*mongo.InsertOneRes
 		LikedUsers: make([]string, 0),
 		Time:       time.Now(),
 	}
+	var notification = models.Notification{
+		UserId:     floorOwner,
+		NotifyType: "comment",
+		Author:     task.Author,
+		AuthorName: task.AuthorName,
+		PostId:     task.PostId,
+		Floor:      task.Floor,
+		VoteId:     "",
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -527,6 +575,13 @@ func InsertComment(db *mongo.Database, task models.Comment) (*mongo.InsertOneRes
 	res, err := CommentCollection.InsertOne(ctx, comment)
 	if err != nil {
 		log.Println("Insert post Error", err)
+		return nil, err
+	}
+
+	log.Println("notification : ", notification)
+	res, err = NotificationCollection.InsertOne(ctx, notification)
+	if err != nil {
+		log.Println("Insert notification Error", err)
 		return nil, err
 	}
 
@@ -608,6 +663,44 @@ func LikePost(db *mongo.Database, task models.Post) error {
 	return err
 }
 
+func AddSpecialty(db *mongo.Database, task models.Specialty) error {
+	SpecialtyCollection := db.Collection("Specialty")
+	var specialty models.Specialty
+	result := SpecialtyCollection.FindOne(context.Background(), task.ToQueryBson())
+	err := result.Decode(&specialty)
+	specialty.Score = specialty.Score + 1
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if specialty.Score == 100 {
+		NotificationCollection := db.Collection("Notification")
+
+		var notification = models.Notification{
+			UserId:     task.UserId,
+			NotifyType: "specialty",
+			Author:     task.BoardId,
+			AuthorName: task.BoardName,
+			PostId:     "",
+			Floor:      -1,
+			VoteId:     "",
+		}
+		_, err = NotificationCollection.InsertOne(ctx, notification)
+		if err != nil {
+			log.Println("Insert notification Error", err)
+			return err
+		}
+	}
+
+	filter := bson.M{"userId": task.UserId, "boardId": task.BoardId}
+	update := bson.M{"$set": bson.M{"score": specialty.Score}}
+	_, err = SpecialtyCollection.UpdateOne(ctx, filter, update)
+
+	if err != nil {
+		log.Println("Update Comment Error", err)
+		return err
+	}
+	return err
+}
+
 func LikeComment(db *mongo.Database, task models.Comment) error {
 	CommentCollection := db.Collection("Comment")
 	var comment models.Comment
@@ -642,6 +735,33 @@ func InsertCitation(db *mongo.Database, task models.Citation) (*mongo.InsertOneR
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	PostCollection := db.Collection("Post")
+	NotificationCollection := db.Collection("Notification")
+	var topPost = models.Post{}
+	var citedPost = models.Post{}
+	result := PostCollection.FindOne(context.Background(), bson.M{"postId": task.PostId, "floor": task.Floor})
+	err := result.Decode(&topPost)
+	if err != nil {
+		log.Println("Decode task Error", err)
+		return nil, err
+	}
+
+	floorOwner := topPost.Author
+	var notification = models.Notification{
+		UserId:     floorOwner,
+		NotifyType: "citation",
+		Author:     citedPost.Author,
+		AuthorName: citedPost.AuthorName,
+		PostId:     task.PostId,
+		Floor:      task.Floor,
+		VoteId:     "",
+	}
+	_, err = NotificationCollection.InsertOne(ctx, notification)
+	if err != nil {
+		log.Println("Insert notification Error", err)
+		return nil, err
+	}
 
 	res, err := CitationCollection.InsertOne(ctx, citation)
 	if err != nil {

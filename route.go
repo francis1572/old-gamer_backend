@@ -49,6 +49,9 @@ func (p *RouteMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/LikeComment":
 		respond.LikeComment(Database, w, r)
 		return
+	case "/AddSpecialty":
+		respond.AddSpecialty(Database, w, r)
+		return
 	case "/EditComment":
 		respond.EditComment(Database, w, r)
 		return

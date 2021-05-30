@@ -421,6 +421,25 @@ func LikeComment(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 	return nil
 }
 
+func AddSpecialty(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
+	var requestBody models.Specialty
+
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	// log.Println(requestBody)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+
+	err = service.AddSpecialty(database, requestBody)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return err
+	}
+	return nil
+}
+
 func MakeCitation(database *mongo.Database, w http.ResponseWriter, r *http.Request) error {
 	var requestBody models.Citation
 

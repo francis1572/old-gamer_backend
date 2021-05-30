@@ -706,6 +706,8 @@ func Vote(db *mongo.Database, queryBson bson.M) (*mongo.UpdateResult, error) {
 		return nil, nil
 	}
 
+	isVotePass := false
+
 	var update bson.M
 	status := vote.Status
 	// type of queryBson["decision"] is float
@@ -715,9 +717,10 @@ func Vote(db *mongo.Database, queryBson bson.M) (*mongo.UpdateResult, error) {
 			"disagreedUsers": append(vote.DisagreedUsers, queryBson["userId"].(string)),
 		}}
 	} else if queryBson["decision"] == 1. {
-		if vote.Agree+1 == system.VoteThreshold {
+		if vote.Agree+1 >= system.VoteThreshold {
 			status = "success"
 			LaunchBoard(db, vote)
+			isVotePass = true
 		}
 		update = bson.M{"$set": bson.M{
 			"agree":       vote.Agree + 1,
@@ -733,6 +736,28 @@ func Vote(db *mongo.Database, queryBson bson.M) (*mongo.UpdateResult, error) {
 	if err != nil {
 		log.Println("Vote Error", err)
 		return nil, err
+	}
+
+	if isVotePass {
+		NotificationCollection := db.Collection("Notification")
+		var notification = models.Notification{
+			UserId:     vote.Launcher,
+			NotifyType: "vote success",
+			Author:     "",
+			AuthorName: "",
+			PostId:     "",
+			Floor:      -1,
+			VoteId:     vote.VoteId,
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		_, err := NotificationCollection.InsertOne(ctx, notification)
+		if err != nil {
+			log.Println("Insert Citation Error", err)
+			return nil, err
+		}
 	}
 	return res, nil
 }
@@ -852,6 +877,21 @@ func UpdateAllVotesStatus(db *mongo.Database) {
 				if err != nil {
 					log.Println("Update Vote Status Error", err)
 				}
+
+				NotificationCollection := db.Collection("Notification")
+				var notification = models.Notification{
+					UserId:     vote.Launcher,
+					NotifyType: "vote failed",
+					Author:     "",
+					AuthorName: "",
+					PostId:     "",
+					Floor:      -1,
+					VoteId:     vote.VoteId,
+				}
+				_, err = NotificationCollection.InsertOne(ctx, notification)
+				if err != nil {
+					log.Println("Update Notification Status Error", err)
+				}
 			}
 		}
 	}
@@ -892,6 +932,8 @@ func LaunchBoard(db *mongo.Database, vote models.Vote) {
 }
 
 func GetNotification(db *mongo.Database, query models.User) (*models.Notification, error) {
+	UpdateAllVotesStatus(db)
+
 	NotificationCollection := db.Collection("Notification")
 	var notification *models.Notification
 	result := NotificationCollection.FindOneAndDelete(context.Background(), query.ToQueryBson())

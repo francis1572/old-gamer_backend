@@ -123,6 +123,8 @@ func GetChildBoardByBoardId(db *mongo.Database, task models.ChildBoard) ([]*mode
 
 func GetPostsByBoardId(db *mongo.Database, task models.Board) ([]*models.Post, error) {
 	PostCollection := db.Collection("Post")
+	UserCollection := db.Collection("GUser")
+	SpecialtyCollection := db.Collection("Specialty")
 	var posts []*models.Post
 	cur, err := PostCollection.Find(context.Background(), task.ToQueryBson())
 	if err != nil {
@@ -136,6 +138,17 @@ func GetPostsByBoardId(db *mongo.Database, task models.Board) ([]*models.Post, e
 			log.Println("Decode answer Error", err)
 			return nil, err
 		}
+		var user = models.User{}
+		temp := UserCollection.FindOne(context.Background(), bson.M{"userId": result.Author})
+		err = temp.Decode(&user)
+
+		var specialty = models.Specialty{}
+		temp2 := SpecialtyCollection.FindOne(context.Background(), bson.M{"userId": result.Author, "boardId": result.BoardId})
+		err = temp2.Decode(&specialty)
+		user.CumulateGameSpecialty = append(user.CumulateGameSpecialty, specialty)
+
+		result.AuthorInfo = user
+
 		posts = append(posts, &result)
 	}
 	return posts, nil

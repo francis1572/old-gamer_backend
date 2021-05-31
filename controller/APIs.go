@@ -144,6 +144,7 @@ func GetAllPosts(database *mongo.Database, w http.ResponseWriter, r *http.Reques
 			PostTitle:    post.PostTitle,
 			Author:       post.Author,
 			AuthorName:   post.AuthorName,
+			AuthorInfo:   post.AuthorInfo,
 			Floor:        post.Floor,
 			CommentNum:   post.CommentNum,
 			LikeNum:      post.LikeNum,
